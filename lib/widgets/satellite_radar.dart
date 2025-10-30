@@ -50,6 +50,28 @@ class RadarPainter extends CustomPainter {
 
   RadarPainter({required this.satellites, this.heading});
 
+  void _drawText(Canvas canvas, Offset position, String text, {Color color = Colors.white, double fontSize = 12}) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(color: color, fontSize: fontSize),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(position.dx - textPainter.width / 2, position.dy - textPainter.height / 2));
+  }
+
+  Color _getSatelliteColor(double signalStrength) {
+    if (signalStrength > 30) {
+      return Colors.green;
+    } else if (signalStrength > 20) {
+      return Colors.yellow;
+    } else {
+      return Colors.red;
+    }
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
@@ -63,6 +85,14 @@ class RadarPainter extends CustomPainter {
       canvas.drawCircle(center, radius * i / 3, backgroundPaint);
     }
 
+    // Draw elevation labels
+    for (int i = 1; i <= 2; i++) {
+      final r = radius * i / 3;
+      final angle = -pi / 4; // Top-right quadrant
+      final position = Offset(center.dx + r * cos(angle), center.dy + r * sin(angle));
+      _drawText(canvas, position, '${90 - i * 30}°', color: Colors.green.withOpacity(0.8));
+    }
+
     // Draw lines for azimuth
     for (int i = 0; i < 4; i++) {
       final angle = i * pi / 2;
@@ -71,29 +101,15 @@ class RadarPainter extends CustomPainter {
       canvas.drawLine(p1, p2, backgroundPaint);
     }
 
-    // Draw North arrow
-    final northArrowPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 2;
-    final northArrowPath = Path();
-    northArrowPath.moveTo(center.dx, center.dy - radius - 10);
-    northArrowPath.lineTo(center.dx - 5, center.dy - radius);
-    northArrowPath.lineTo(center.dx + 5, center.dy - radius);
-    northArrowPath.close();
-    canvas.drawPath(northArrowPath, northArrowPaint);
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'N',
-        style: TextStyle(color: Colors.red, fontSize: 16),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy - radius - 30));
+    // Draw cardinal direction labels
+    _drawText(canvas, Offset(center.dx, center.dy - radius - 20), 'N', color: Colors.red, fontSize: 16);
+    _drawText(canvas, Offset(center.dx + radius + 20, center.dy), 'E', color: Colors.white, fontSize: 16);
+    _drawText(canvas, Offset(center.dx, center.dy + radius + 20), 'S', color: Colors.white, fontSize: 16);
+    _drawText(canvas, Offset(center.dx - radius - 20, center.dy), 'W', color: Colors.white, fontSize: 16);
 
     // Draw satellites
-    final satellitePaint = Paint()..color = Colors.yellow;
     for (final satellite in satellites) {
+      final satellitePaint = Paint()..color = _getSatelliteColor(satellite.signalStrength);
       final angle = (satellite.azimuth - 90) * pi / 180;
       final distance = (90 - satellite.elevation) / 90 * radius;
       final satellitePosition = Offset(
@@ -101,6 +117,16 @@ class RadarPainter extends CustomPainter {
         center.dy + distance * sin(angle),
       );
       canvas.drawCircle(satellitePosition, 5, satellitePaint);
+
+      final prnTextPainter = TextPainter(
+        text: TextSpan(
+          text: '${satellite.prn}',
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      prnTextPainter.layout();
+      prnTextPainter.paint(canvas, Offset(satellitePosition.dx - prnTextPainter.width / 2, satellitePosition.dy + 5));
     }
 
     // Draw compass in the center

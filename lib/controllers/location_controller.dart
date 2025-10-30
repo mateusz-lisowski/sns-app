@@ -34,10 +34,23 @@ class LocationController extends GetxController {
         if (data is List) {
           satellites.value = data.map((item) {
             if (item is Map) {
+              final prn = item['prn'];
+              final name = item['name'];
+              final signalStrength = item['signalStrength'];
               final azimuth = item['azimuth'];
               final elevation = item['elevation'];
-              if (azimuth is double && elevation is double) {
-                return Satellite(azimuth: azimuth, elevation: elevation);
+              if (prn is int &&
+                  name is String &&
+                  signalStrength is double &&
+                  azimuth is double &&
+                  elevation is double) {
+                return Satellite(
+                  prn: prn,
+                  name: name,
+                  signalStrength: signalStrength,
+                  azimuth: azimuth,
+                  elevation: elevation,
+                );
               }
             }
             return null;

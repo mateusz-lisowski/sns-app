@@ -16,8 +16,6 @@ class MainActivity : FlutterActivity() {
     private val satelliteEventChannel = "com.github.sindbad/satellite"
     private var batteryHandler: Handler? = null
     private var batteryRunnable: Runnable? = null
-    private var satelliteHandler: Handler? = null
-    private var satelliteRunnable: Runnable? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -57,8 +55,21 @@ class MainActivity : FlutterActivity() {
                         override fun onSatelliteStatusChanged(status: GnssStatus) {
                             val satellites = mutableListOf<Map<String, Any>>()
                             for (i in 0 until status.satelliteCount) {
+                                val constellation = when (status.getConstellationType(i)) {
+                                    GnssStatus.CONSTELLATION_GPS -> "GPS"
+                                    GnssStatus.CONSTELLATION_SBAS -> "SBAS"
+                                    GnssStatus.CONSTELLATION_GLONASS -> "GLONASS"
+                                    GnssStatus.CONSTELLATION_QZSS -> "QZSS"
+                                    GnssStatus.CONSTELLATION_BEIDOU -> "BEIDOU"
+                                    GnssStatus.CONSTELLATION_GALILEO -> "GALILEO"
+                                    GnssStatus.CONSTELLATION_IRNSS -> "IRNSS"
+                                    else -> "UNKNOWN"
+                                }
                                 satellites.add(
                                     mapOf(
+                                        "prn" to status.getSvid(i),
+                                        "name" to "$constellation ${status.getSvid(i)}",
+                                        "signalStrength" to status.getCn0DbHz(i),
                                         "azimuth" to status.getAzimuthDegrees(i),
                                         "elevation" to status.getElevationDegrees(i)
                                     )
