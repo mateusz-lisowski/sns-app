@@ -12,7 +12,7 @@ void main() {
 
 class PowerController extends GetxController {
   static const batteryChannel = EventChannel('com.github.sindbad/battery');
-  final RxList<int> currentMeasurements = <int>[].obs;
+  final List<int> currentMeasurements = <int>[];
   final RxDouble averageCurrentFlow = 0.0.obs;
   StreamSubscription? _batteryStreamSubscription;
 
@@ -144,8 +144,6 @@ class Home extends StatelessWidget {
             }),
             const SizedBox(height: 20),
             Obx(() => Text("Average current flow: ${pc.averageCurrentFlow.value.toStringAsFixed(2)} µA")),
-            const SizedBox(height: 10),
-            Obx(() => Text("Raw measurements: [${pc.currentMeasurements.join(', ')}]")),
           ],
         ),
       ),
