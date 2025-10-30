@@ -110,6 +110,41 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("SNS App"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: ListView(
+          children: [
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.insights),
+                title: const Text('Lab 1 (Device Power & Location)'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const DevicePowerAndLocationScreen());
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class DevicePowerAndLocationScreen extends StatelessWidget {
+  const DevicePowerAndLocationScreen({super.key});
+
+  @override
+  Widget build(context) {
     // Find the existing controllers.
     final LocationController lc = Get.find();
     final PowerController pc = Get.find();
@@ -163,7 +198,7 @@ class Home extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      position.latitude.toString(),
+                                      position.latitude.toStringAsFixed(4),
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyLarge
@@ -180,7 +215,7 @@ class Home extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      position.longitude.toString(),
+                                      position.longitude.toStringAsFixed(4),
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyLarge
