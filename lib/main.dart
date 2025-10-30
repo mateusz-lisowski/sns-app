@@ -91,13 +91,14 @@ class SnsApp extends StatelessWidget {
     Get.put(PowerController());
 
     return GetMaterialApp(
-      title: 'SNS Demo App',
+      title: 'Device Power & Location',
       theme: ThemeData(
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
           brightness: Brightness.dark,
         ),
+        useMaterial3: true,
       ),
       home: const Home(),
     );
@@ -114,36 +115,121 @@ class Home extends StatelessWidget {
     final PowerController pc = Get.find();
 
     return Scaffold(
-      appBar: AppBar(title: Text("SNS Demo App")),
-      body: Center(
+      appBar: AppBar(
+        title: const Text("Device Power & Location"),
+        elevation: 4,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Obx(
-                  () => SwitchListTile(
-                title: const Text("Enable Location"),
-                value: lc.isLocationEnabled.value,
-                onChanged: (bool value) {
-                  lc.toggleLocationServices();
-                },
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.location_on),
+                      title: const Text("Location"),
+                      trailing: Obx(
+                        () => Switch(
+                          value: lc.isLocationEnabled.value,
+                          onChanged: (bool value) {
+                            lc.toggleLocationServices();
+                          },
+                        ),
+                      ),
+                    ),
+                    Obx(() {
+                      if (lc.isLocationEnabled.value) {
+                        if (lc.currentPosition.value != null) {
+                          final position = lc.currentPosition.value!;
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Latitude",
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      position.latitude.toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Longitude",
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      position.longitude.toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 8.0),
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                      } else {
+                        return const SizedBox.shrink();
+                      }
+                    }),
+                  ],
+                ),
               ),
             ),
-            Obx(() {
-              if (lc.isLocationEnabled.value && lc.currentPosition.value != null) {
-                final position = lc.currentPosition.value!;
-                return Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    Text('Latitude: ${position.latitude}'),
-                    Text('Longitude: ${position.longitude}'),
-                  ],
-                );
-              } else {
-                return const SizedBox.shrink(); // Return an empty widget if location is off
-              }
-            }),
             const SizedBox(height: 20),
-            Obx(() => Text("Average current flow: ${pc.averageCurrentFlow.value.toStringAsFixed(2)} µA")),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    const ListTile(
+                      leading: Icon(Icons.power),
+                      title: Text("Power Consumption"),
+                    ),
+                    Obx(() => Text(
+                          "${pc.averageCurrentFlow.value.toStringAsFixed(2)} µA",
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: Colors.greenAccent,
+                              ),
+                        )),
+                    const Text("Average Current Flow"),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
