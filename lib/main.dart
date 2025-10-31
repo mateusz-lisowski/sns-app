@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sns_app/screens/path_tracking_screen.dart';
 import 'package:sns_app/screens/satellite_radar_screen.dart';
 
 import 'controllers/location_controller.dart';
@@ -72,6 +73,20 @@ class Home extends StatelessWidget {
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
                   Get.to(() => const SatelliteRadarScreen());
+                },
+              ),
+            ),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.moving_outlined),
+                title: const Text('Path Tracking'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => PathTrackingScreen());
                 },
               ),
             ),
