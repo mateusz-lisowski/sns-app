@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ class LocationController extends GetxController {
   StreamSubscription<Position>? _positionStream;
   final Rx<List<Satellite>> satellites = Rx<List<Satellite>>([]);
   StreamSubscription? _satelliteStream;
+  final RxList<Position> path = <Position>[].obs;
 
   static const _satelliteChannel = EventChannel('com.github.sindbad/satellite');
 
@@ -26,8 +28,10 @@ class LocationController extends GetxController {
 
   Future<void> _startLocationUpdates() async {
     if (await Permission.location.request().isGranted) {
+      path.clear();
       _positionStream = Geolocator.getPositionStream().listen((Position position) {
         currentPosition.value = position;
+        path.add(position);
       });
 
       _satelliteStream = _satelliteChannel.receiveBroadcastStream().listen((dynamic data) {
@@ -65,5 +69,6 @@ class LocationController extends GetxController {
     _satelliteStream?.cancel();
     currentPosition.value = null;
     satellites.value = [];
+    path.clear();
   }
 }
