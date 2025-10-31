@@ -55,7 +55,7 @@ class Home extends StatelessWidget {
               ),
               child: ListTile(
                 leading: const Icon(Icons.insights),
-                title: const Text('Lab 1 (Device Power & Location)'),
+                title: const Text('Device Power & Location'),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
                   Get.to(() => const DevicePowerAndLocationScreen());
