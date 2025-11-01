@@ -26,6 +26,31 @@ class LocationController extends GetxController {
     }
   }
 
+  Future<void> addCurrentPositionToPath() async {
+    var permission = await Permission.location.status;
+    if (permission.isDenied) {
+      permission = await Permission.location.request();
+      if (permission.isDenied) {
+        Get.snackbar('Permission Denied', 'Location permissions are denied');
+        return;
+      }
+    }
+
+    if (permission.isPermanentlyDenied) {
+      Get.snackbar('Permission Denied',
+          'Location permissions are permanently denied, we cannot request permissions.');
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      path.add(position);
+      currentPosition.value = position;
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to get current location: $e');
+    }
+  }
+
   Future<void> _startLocationUpdates() async {
     if (await Permission.location.request().isGranted) {
       path.clear();
@@ -34,7 +59,8 @@ class LocationController extends GetxController {
         path.add(position);
       });
 
-      _satelliteStream = _satelliteChannel.receiveBroadcastStream().listen((dynamic data) {
+      _satelliteStream =
+          _satelliteChannel.receiveBroadcastStream().listen((dynamic data) {
         if (data is List) {
           satellites.value = data.map((item) {
             if (item is Map) {
