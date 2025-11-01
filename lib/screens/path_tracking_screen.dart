@@ -22,12 +22,21 @@ class PathTrackingScreen extends StatelessWidget {
             },
           )),
           Expanded(
-            child: Obx(() => CustomPaint(
-              painter: PathPainter(path: locationController.path.toList()),
-              child: Container(),
-            )),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Obx(() => CustomPaint(
+                    painter: PathPainter(path: locationController.path.toList()),
+                    child: Container(),
+                  )),
+            ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          locationController.addCurrentPositionToPath();
+        },
+        child: Icon(Icons.add_location),
       ),
     );
   }
