@@ -43,6 +43,45 @@ class SatelliteRadarScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            Obx(() {
+              if (lc.isLocationEnabled.value) {
+                return Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Text('Good', style: TextStyle(color: Colors.green)),
+                            Text('${lc.goodSignalSatellites}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Mid', style: TextStyle(color: Colors.yellow)),
+                            Text('${lc.midSignalSatellites}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Bad', style: TextStyle(color: Colors.red)),
+                            Text('${lc.badSignalSatellites}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            }),
             const SizedBox(height: 20),
             Expanded(
               child: Obx(() {
