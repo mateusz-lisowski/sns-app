@@ -32,13 +32,13 @@ class PathPainter extends CustomPainter {
       final lat = bounds.minLat + i * latStep;
       final y = _scaleLat(lat, size, bounds);
       canvas.drawLine(Offset(padding, y), Offset(size.width - padding, y), gridPaint);
-      _drawText(canvas, '${lat.toStringAsFixed(4)}', Offset(padding - 45, y));
+      _drawText(canvas, lat.toStringAsFixed(4), Offset(padding - 45, y));
 
       // Longitude lines and labels
       final lon = bounds.minLon + i * lonStep;
       final x = _scaleLon(lon, size, bounds);
       canvas.drawLine(Offset(x, padding), Offset(x, size.height - padding), gridPaint);
-      _drawText(canvas, '${lon.toStringAsFixed(4)}', Offset(x, padding - 20), vertical: true);
+      _drawText(canvas, lon.toStringAsFixed(4), Offset(x, padding - 20), vertical: true);
     }
   }
 

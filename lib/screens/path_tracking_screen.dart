@@ -6,6 +6,8 @@ import 'package:sns_app/widgets/path_painter.dart';
 class PathTrackingScreen extends StatelessWidget {
   final LocationController locationController = Get.find();
 
+  PathTrackingScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
