@@ -17,6 +17,10 @@ class LocationController extends GetxController {
 
   static const _satelliteChannel = EventChannel('com.github.sindbad/satellite');
 
+  int get goodSignalSatellites => satellites.value.where((s) => s.signalStrength > 30).length;
+  int get midSignalSatellites => satellites.value.where((s) => s.signalStrength > 20 && s.signalStrength <= 30).length;
+  int get badSignalSatellites => satellites.value.where((s) => s.signalStrength <= 20).length;
+
   void toggleLocationServices() {
     isLocationEnabled.value = !isLocationEnabled.value;
     if (isLocationEnabled.value) {
