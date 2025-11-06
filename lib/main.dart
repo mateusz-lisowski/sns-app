@@ -1,7 +1,15 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sns_app/controllers/tasks_controller.dart';
 import 'package:sns_app/screens/path_tracking_screen.dart';
 import 'package:sns_app/screens/satellite_radar_screen.dart';
+import 'package:sns_app/screens/angle_calculation_screen.dart';
+import 'package:sns_app/screens/parallel_line_screen.dart';
+import 'package:sns_app/screens/points_on_line_screen.dart';
+import 'package:sns_app/screens/distance_from_line_azimuth_screen.dart';
+import 'package:sns_app/screens/track_following_screen.dart';
+import 'package:sns_app/screens/map_matching_screen.dart';
 
 import 'controllers/location_controller.dart';
 import 'controllers/power_controller.dart';
@@ -19,6 +27,7 @@ class SnsApp extends StatelessWidget {
     // Initialize controllers once, here at the root.
     Get.put(LocationController());
     Get.put(PowerController());
+    Get.put(TasksController());
 
     return GetMaterialApp(
       title: 'Device Power & Location',
@@ -87,6 +96,90 @@ class Home extends StatelessWidget {
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
                   Get.to(() => PathTrackingScreen());
+                },
+              ),
+            ),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.calculate),
+                title: const Text('Angle Calculation'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const AngleCalculationScreen());
+                },
+              ),
+            ),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.linear_scale),
+                title: const Text('Parallel Line'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const ParallelLineScreen());
+                },
+              ),
+            ),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.timeline),
+                title: const Text('Points on a Line'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const PointsOnLineScreen());
+                },
+              ),
+            ),
+             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.explore),
+                title: const Text('Distance from Line (Azimuth/Distance)'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const DistanceFromLineAzimuthScreen());
+                },
+              ),
+            ),
+             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.directions),
+                title: const Text('Track Following & Distance'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const TrackFollowingScreen());
+                },
+              ),
+            ),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text('Map Matching'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Get.to(() => const MapMatchingScreen());
                 },
               ),
             ),
