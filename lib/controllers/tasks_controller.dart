@@ -16,8 +16,10 @@ class TasksController extends GetxController {
 
   // Task 5: Map Matching
   final RxList<Wpt> task5TrackPoints = <Wpt>[].obs;
+  final RxList<Wpt> task5MatchedTrackPoints = <Wpt>[].obs;
   final Rx<Wpt?> task5NearestPoint = Rx<Wpt?>(null);
   final RxDouble task5DistanceToNearestPoint = 0.0.obs;
+  final Rx<Position?> currentPosition = Rx<Position?>(null);
 
   // ... (other controller properties)
   // Task 0: Angle Calculation
@@ -68,17 +70,17 @@ class TasksController extends GetxController {
   final TextEditingController task3AzimuthController = TextEditingController();
   final TextEditingController task3DistanceController = TextEditingController();
 
-    // Task 4
+  // Task 4
   final RxBool task4IsTracking = false.obs;
   final RxList<Vector2> task4RoutePoints = <Vector2>[].obs;
   final RxDouble task4CurrentDistance = 0.0.obs;
-
 
   StreamSubscription<Position>? _positionStream;
 
   @override
   void onInit() {
     super.onInit();
+    _getCurrentLocation();
     _listenToLocationChanges();
 
     // Add all listeners
@@ -131,32 +133,42 @@ class TasksController extends GetxController {
     super.onClose();
   }
 
+  Future<void> _getCurrentLocation() async {
+    try {
+      currentPosition.value = await Geolocator.getCurrentPosition();
+    } catch (e) {
+      Get.snackbar('Error', 'Could not get current location');
+    }
+  }
+
   void _listenToLocationChanges() {
     _positionStream = Geolocator.getPositionStream().listen((position) {
-      final currentPosition = Vector2(position.latitude, position.longitude);
+      currentPosition.value = position;
+      final currentPositionVec = Vector2(position.latitude, position.longitude);
 
       if (point1.value != null && point2.value != null) {
-        _calculateAngleAndAzimuth(point1.value!, point2.value!, currentPosition);
+        _calculateAngleAndAzimuth(
+            point1.value!, point2.value!, currentPositionVec);
       }
       if (task1Point1.value != null &&
           task1Point2.value != null &&
           task1Point3.value != null) {
         _calculateParallelLineDirection(task1Point1.value!, task1Point2.value!,
-            task1Point3.value!, currentPosition);
+            task1Point3.value!, currentPositionVec);
       }
       if (task2Point1.value != null && task2Point2.value != null) {
         _calculateDistanceToLine(
-            'task2', task2Point1.value!, task2Point2.value!, currentPosition);
+            'task2', task2Point1.value!, task2Point2.value!, currentPositionVec);
       }
       if (task3Point1.value != null && task3Point2.value != null) {
         _calculateDistanceToLine(
-            'task3', task3Point1.value!, task3Point2.value!, currentPosition);
+            'task3', task3Point1.value!, task3Point2.value!, currentPositionVec);
       }
       if (task4IsTracking.value) {
-        _updateCurrentRoute(currentPosition);
+        _updateCurrentRoute(currentPositionVec);
       }
       if (task5TrackPoints.isNotEmpty) {
-        _findNearestPointOnTrack(currentPosition);
+        _findNearestPointOnTrack(currentPositionVec);
       }
     });
   }
@@ -321,12 +333,18 @@ class TasksController extends GetxController {
     final lon1Rad = radians(p1.y);
     final azimuthRad = radians(azimuth);
 
-    final lat2Rad = math.asin(math.sin(lat1Rad) * math.cos(distance / earthRadius) +
-        math.cos(lat1Rad) * math.sin(distance / earthRadius) * math.cos(azimuthRad));
+    final lat2Rad = math.asin(math.sin(lat1Rad) *
+            math.cos(distance / earthRadius) +
+        math.cos(lat1Rad) *
+            math.sin(distance / earthRadius) *
+            math.cos(azimuthRad));
     final lon2Rad = lon1Rad +
         math.atan2(
-            math.sin(azimuthRad) * math.sin(distance / earthRadius) * math.cos(lat1Rad),
-            math.cos(distance / earthRadius) - math.sin(lat1Rad) * math.sin(lat2Rad));
+            math.sin(azimuthRad) *
+                math.sin(distance / earthRadius) *
+                math.cos(lat1Rad),
+            math.cos(distance / earthRadius) -
+                math.sin(lat1Rad) * math.sin(lat2Rad));
 
     task3Point2.value = Vector2(degrees(lat2Rad), degrees(lon2Rad));
   }
@@ -363,6 +381,7 @@ class TasksController extends GetxController {
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
       if (file.path.toLowerCase().endsWith('.gpx')) {
+        task5MatchedTrackPoints.clear();
         final gpxString = await file.readAsString();
         final gpx = GpxReader().fromString(gpxString);
 
@@ -388,7 +407,8 @@ class TasksController extends GetxController {
         }
 
         task5TrackPoints.value = trackPoints;
-        Get.snackbar('Success', 'GPX file loaded with ${trackPoints.length} points.');
+        Get.snackbar(
+            'Success', 'GPX file loaded with ${trackPoints.length} points.');
       } else {
         Get.snackbar('Error', 'Invalid file type. Please select a GPX file.');
       }
@@ -398,56 +418,152 @@ class TasksController extends GetxController {
     }
   }
 
-  void _findNearestPointOnTrack(Vector2 currentPosition) {
-    Wpt? nearestPoint;
-    double minDistance = double.infinity;
-
+  Future<void> matchGpxToRoads() async {
     if (task5TrackPoints.isEmpty) {
+      Get.snackbar('Error', 'No GPX track loaded.');
       return;
     }
+
+    const double epsilon = 5.0; // in meters
+    final List<Wpt> simplifiedPoints = _ramerDouglasPeucker(task5TrackPoints, epsilon);
+
+
+    task5MatchedTrackPoints.value = simplifiedPoints;
+    Get.snackbar('Success',
+        'Route simplified to ${simplifiedPoints.length} points.');
+  }
+
+  List<Wpt> _ramerDouglasPeucker(List<Wpt> points, double epsilon) {
+    if (points.length < 3) {
+      return points;
+    }
+
+    int firstIndex = 0;
+    int lastIndex = points.length - 1;
+    List<int> indexList = [firstIndex, lastIndex];
+
+    _ramerDouglasPeuckerRecursive(points, firstIndex, lastIndex, epsilon, indexList);
+
+    indexList.sort();
+    return indexList.map((index) => points[index]).toList();
+  }
+
+  void _ramerDouglasPeuckerRecursive(List<Wpt> points, int firstIndex, int lastIndex, double epsilon, List<int> indexList) {
+    double maxDistance = 0;
+    int index = 0;
+
+    for (int i = firstIndex + 1; i < lastIndex; i++) {
+      double distance = _perpendicularDistance(points[i], points[firstIndex], points[lastIndex]);
+      if (distance > maxDistance) {
+        maxDistance = distance;
+        index = i;
+      }
+    }
+
+    if (maxDistance > epsilon) {
+      if (!indexList.contains(index)) {
+        indexList.add(index);
+      }
+      _ramerDouglasPeuckerRecursive(points, firstIndex, index, epsilon, indexList);
+      _ramerDouglasPeuckerRecursive(points, index, lastIndex, epsilon, indexList);
+    }
+  }
+
+  double _perpendicularDistance(Wpt pt, Wpt p1, Wpt p2) {
+    if (p1.lat == null || p1.lon == null || p2.lat == null || p2.lon == null || pt.lat == null || pt.lon == null) {
+      return 0;
+    }
+
+    double dx = p2.lon! - p1.lon!;
+    double dy = p2.lat! - p1.lat!;
+
+    if (dx == 0 && dy == 0) {
+      return Geolocator.distanceBetween(pt.lat!, pt.lon!, p1.lat!, p1.lon!);
+    }
+
+    double t = ((pt.lon! - p1.lon!) * dx + (pt.lat! - p1.lat!) * dy) / (dx * dx + dy * dy);
+
+    Wpt projection;
+    if (t < 0) {
+      projection = p1;
+    } else if (t > 1) {
+      projection = p2;
+    } else {
+      projection = Wpt(lat: p1.lat! + t * dy, lon: p1.lon! + t * dx);
+    }
+
+    return Geolocator.distanceBetween(pt.lat!, pt.lon!, projection.lat!, projection.lon!);
+  }
+
+
+  void _findNearestPointOnTrack(Vector2 currentPosition) {
+    if (task5TrackPoints.isEmpty) {
+      task5NearestPoint.value = null;
+      task5DistanceToNearestPoint.value = 0.0;
+      return;
+    }
+
+    if (task5TrackPoints.length == 1) {
+      final point = task5TrackPoints.first;
+      if (point.lat != null && point.lon != null) {
+        task5NearestPoint.value = point;
+        task5DistanceToNearestPoint.value = Geolocator.distanceBetween(
+            currentPosition.x, currentPosition.y, point.lat!, point.lon!);
+      }
+      return;
+    }
+
+    double minDistanceSq = double.infinity;
+
+    final metersPerDegreeLat = 111320.0;
+    final metersPerDegreeLon =
+        111320.0 * math.cos(radians(currentPosition.x));
+
+    final currentPosMeters = Vector2.zero();
+    Vector2? closestPointMeters;
 
     for (int i = 0; i < task5TrackPoints.length - 1; i++) {
       final p1 = task5TrackPoints[i];
       final p2 = task5TrackPoints[i + 1];
 
-      // Ensure points are valid
-      if (p1.lat == null || p1.lon == null || p2.lat == null || p2.lon == null) continue;
+      if (p1.lat == null ||
+          p1.lon == null ||
+          p2.lat == null ||
+          p2.lon == null)
+        continue;
 
-      final p1Vec = Vector2(p1.lat!, p1.lon!);
-      final p2Vec = Vector2(p2.lat!, p2.lon!);
-
-      final closestPointOnSegment =
-          _getClosestPointOnSegment(p1Vec, p2Vec, currentPosition);
-
-      final distance = Geolocator.distanceBetween(
-        currentPosition.x,
-        currentPosition.y,
-        closestPointOnSegment.x,
-        closestPointOnSegment.y,
+      final p1Meters = Vector2(
+        (p1.lon! - currentPosition.y) * metersPerDegreeLon,
+        (p1.lat! - currentPosition.x) * metersPerDegreeLat,
+      );
+      final p2Meters = Vector2(
+        (p2.lon! - currentPosition.y) * metersPerDegreeLon,
+        (p2.lat! - currentPosition.x) * metersPerDegreeLat,
       );
 
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestPoint = Wpt(
-          lat: closestPointOnSegment.x,
-          lon: closestPointOnSegment.y,
-        );
+      final pointOnSegmentMeters =
+          _getClosestPointOnSegment(p1Meters, p2Meters, currentPosMeters);
+
+      final distanceSq = pointOnSegmentMeters.length2;
+
+      if (distanceSq < minDistanceSq) {
+        minDistanceSq = distanceSq;
+        closestPointMeters = pointOnSegmentMeters;
       }
     }
 
-    // Also check the last point
-    final lastPoint = task5TrackPoints.last;
-    if (lastPoint.lat != null && lastPoint.lon != null) {
-      final distance = Geolocator.distanceBetween(
-          currentPosition.x, currentPosition.y, lastPoint.lat!, lastPoint.lon!);
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestPoint = lastPoint;
-      }
-    }
+    if (closestPointMeters != null) {
+      final closestLat =
+          currentPosition.x + (closestPointMeters.y / metersPerDegreeLat);
+      final closestLon =
+          currentPosition.y + (closestPointMeters.x / metersPerDegreeLon);
 
-    task5NearestPoint.value = nearestPoint;
-    task5DistanceToNearestPoint.value = minDistance;
+      task5NearestPoint.value = Wpt(lat: closestLat, lon: closestLon);
+      task5DistanceToNearestPoint.value = math.sqrt(minDistanceSq);
+    } else {
+      task5NearestPoint.value = null;
+      task5DistanceToNearestPoint.value = 0.0;
+    }
   }
 
   Vector2 _getClosestPointOnSegment(Vector2 p1, Vector2 p2, Vector2 a) {
@@ -505,13 +621,12 @@ class TasksController extends GetxController {
   void _calculateDistanceToLine(
       String task, Vector2 p1, Vector2 p2, Vector2 currentPosition) {
     final metersPerDegreeLat = 111320.0;
-    final metersPerDegreeLon = 111320.0 * math.cos(radians(currentPosition.x));
+    final metersPerDegreeLon =
+        111320.0 * math.cos(radians(currentPosition.x));
 
-    final p1m = Vector2(
-        (p1.y - currentPosition.y) * metersPerDegreeLon,
+    final p1m = Vector2((p1.y - currentPosition.y) * metersPerDegreeLon,
         (p1.x - currentPosition.x) * metersPerDegreeLat);
-    final p2m = Vector2(
-        (p2.y - currentPosition.y) * metersPerDegreeLon,
+    final p2m = Vector2((p2.y - currentPosition.y) * metersPerDegreeLon,
         (p2.x - currentPosition.x) * metersPerDegreeLat);
 
     final p1p2m = p2m - p1m;
